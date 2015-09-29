@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <atomic>
 
 using namespace std;
 
@@ -63,6 +64,20 @@ void NonLockedInc()
     }
 }
 
+atomic_flag aLock(ATOMIC_FLAG_INIT);
+
+void LockedAtomicInc()
+{
+    for (int i = 0; i < N; ++i)
+    {
+        while (aLock.test_and_set(std::memory_order_acquire))
+        {
+        }
+        ++value;
+        aLock.clear(std::memory_order_release);
+    }
+}
+
 int main()
 {
     {
@@ -88,6 +103,17 @@ int main()
         t2.join();
         
         cout << "locked: " << value << endl;
+    }
+
+    value = 0;
+    {
+        thread t1(LockedAtomicInc);
+        thread t2(LockedAtomicInc);
+
+        t1.join();
+        t2.join();
+        
+        cout << "locked atomic: " << value << endl;
     }
 
     return 0;
