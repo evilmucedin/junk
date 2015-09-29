@@ -126,9 +126,7 @@ void LockedAtomicInc()
 {
     for (int i = 0; i < N; ++i)
     {
-        while (aLock.test_and_set(std::memory_order_acquire))
-        {
-        }
+        while (aLock.test_and_set(std::memory_order_acquire));
         ++value;
         aLock.clear(std::memory_order_release);
     }
