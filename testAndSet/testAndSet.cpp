@@ -6,16 +6,52 @@ using namespace std;
 static const int N = 100000000;
 
 int value;
-int lock;
 
-void LockedInc()
+int lockWanna;
+int lockGotcha;
+int turn;
+
+void LockedInc1()
 {
     for (int i = 0; i < N; ++i)
     {
-        while (1 == lock);
-        lock = 1;
+        lockWanna = 1;
+        while (lockGotcha)
+        {
+            if (0 != turn)
+            {
+                lockWanna = 0;
+                while (0 != turn);
+                lockWanna = 1;
+            }
+        }
+
         ++value;
-        lock = 0;
+        
+        turn = 1;
+        lockWanna = 0;
+    }
+}
+
+void LockedInc2()
+{
+    for (int i = 0; i < N; ++i)
+    {
+        lockGotcha = 1;
+        while (lockWanna)
+        {
+            if (1 != turn)
+            {
+                lockGotcha = 0;
+                while (1 != turn);
+                lockGotcha = 1;
+            }
+        }
+
+        ++value;
+        
+        turn = 0;
+        lockGotcha = 0;
     }
 }
 
@@ -41,12 +77,13 @@ int main()
 
     value = 0;
     {
-        lock = 1;
+        lockWanna = 0;
+        lockGotcha = 0;
+        turn = 0;
 
-        thread t1(LockedInc);
-        thread t2(LockedInc);
+        thread t1(LockedInc1);
+        thread t2(LockedInc2);
 
-        lock = 0;
         t1.join();
         t2.join();
         
