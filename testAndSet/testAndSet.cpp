@@ -56,6 +56,60 @@ void LockedInc2()
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+
+void LockedSyncedInc1()
+{
+    for (int i = 0; i < N; ++i)
+    {
+        lockWanna = 1;
+        __sync_synchronize();
+        while (lockGotcha)
+        {
+            __sync_synchronize();
+            if (0 != turn)
+            {
+                lockWanna = 0;
+                __sync_synchronize();
+                while (0 != turn);
+                lockWanna = 1;
+            }
+        }
+
+        ++value;
+        
+        turn = 1;
+        lockWanna = 0;
+    }
+}
+
+void LockedSyncedInc2()
+{
+    for (int i = 0; i < N; ++i)
+    {
+        lockGotcha = 1;
+        __sync_synchronize();
+        while (lockWanna)
+        {
+            __sync_synchronize();
+            if (1 != turn)
+            {
+                lockGotcha = 0;
+                __sync_synchronize();
+                while (1 != turn);
+                lockGotcha = 1;
+            }
+        }
+
+        ++value;
+        
+        turn = 0;
+        lockGotcha = 0;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+
 void NonLockedInc()
 {
     for (int i = 0; i < N; ++i)
@@ -63,6 +117,8 @@ void NonLockedInc()
         ++value;
     }
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
 
 atomic_flag aLock(ATOMIC_FLAG_INIT);
 
@@ -89,7 +145,7 @@ int main()
         
         cout << "not locked: " << value << endl;
     }
-
+    
     value = 0;
     {
         lockWanna = 0;
@@ -103,6 +159,21 @@ int main()
         t2.join();
         
         cout << "locked: " << value << endl;
+    }
+
+    value = 0;
+    {
+        lockWanna = 0;
+        lockGotcha = 0;
+        turn = 0;
+
+        thread t1(LockedSyncedInc1);
+        thread t2(LockedSyncedInc2);
+
+        t1.join();
+        t2.join();
+        
+        cout << "locked synced: " << value << endl;
     }
 
     value = 0;
