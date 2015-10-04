@@ -210,7 +210,7 @@ def lstm_layer(tparams, state_below, options, prefix='lstm', mask=None):
 layers = {'lstm': (param_init_lstm, lstm_layer)}
 
 
-def sgd(lr, tparams, grads, x, mask, y, cost):
+def sgd(lr, tparams, grads, x, mask, y, cost, cost0):
     """ Stochastic Gradient Descent
 
     :note: A more complicated version of sgd then needed.  This is
@@ -225,20 +225,19 @@ def sgd(lr, tparams, grads, x, mask, y, cost):
 
     # Function that computes gradients for a mini-batch, but do not
     # updates the weights.
-    f_grad_shared = theano.function([x, mask, y], cost, updates=gsup,
-                                    name='sgd_f_grad_shared')
+    f_grad_shared = theano.function([x, mask, y], cost, updates=gsup, name='sgd_f_grad_shared')
+    f_grad_shared0 = theano.function([x, mask, y], cost0, name='sgd_f_grad_shared0')
 
     pup = [(p, p - lr * g) for p, g in zip(tparams.values(), gshared)]
 
     # Function that updates the weights from the previously computed
     # gradient.
-    f_update = theano.function([lr], [], updates=pup,
-                               name='sgd_f_update')
+    f_update = theano.function([lr], [], updates=pup, name='sgd_f_update')
 
-    return f_grad_shared, f_update
+    return f_grad_shared, f_update, f_grad_shared0
 
 
-def adadelta(lr, tparams, grads, x, mask, y, cost):
+def adadelta(lr, tparams, grads, x, mask, y, cost, cost0):
     """
     An adaptive learning rate optimizer
 
@@ -281,8 +280,8 @@ def adadelta(lr, tparams, grads, x, mask, y, cost):
     rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2))
              for rg2, g in zip(running_grads2, grads)]
 
-    f_grad_shared = theano.function([x, mask, y], cost, updates=zgup + rg2up,
-                                    name='adadelta_f_grad_shared')
+    f_grad_shared = theano.function([x, mask, y], cost, updates=zgup + rg2up, name='adadelta_f_grad_shared')
+    f_grad_shared0 = theano.function([x, mask, y], cost0, name='adadelta_f_grad_shared0')
 
     updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg
              for zg, ru2, rg2 in zip(zipped_grads,
@@ -296,10 +295,10 @@ def adadelta(lr, tparams, grads, x, mask, y, cost):
                                on_unused_input='ignore',
                                name='adadelta_f_update')
 
-    return f_grad_shared, f_update
+    return f_grad_shared, f_update, f_grad_shared0
 
 
-def rmsprop(lr, tparams, grads, x, mask, y, cost):
+def rmsprop(lr, tparams, grads, x, mask, y, cost, cost0):
     """
     A variant of  SGD that scales the step size by running average of the
     recent step norms.
@@ -347,6 +346,8 @@ def rmsprop(lr, tparams, grads, x, mask, y, cost):
 
     f_grad_shared = theano.function([x, mask, y], cost,
                                     updates=zgup + rgup + rg2up,
+                                    name='rmsprop_f_grad_shared')
+    f_grad_shared0 = theano.function([x, mask, y], cost0,
                                     name='rmsprop_f_grad_shared')
 
     updir = [theano.shared(p.get_value() * numpy_floatX(0.),
@@ -399,8 +400,9 @@ def build_model(tparams, options):
         off = 1e-6
 
     cost = -tensor.log(pred[tensor.arange(n_samples), y] + off).mean()
+    costReg = cost + 0.00001*((tparams['Wemb']**2).sum() + (tparams['U']**2).sum() + (tparams['b']**2).sum())
 
-    return use_noise, x, mask, y, f_pred_prob, f_pred, cost
+    return use_noise, x, mask, y, f_pred_prob, f_pred, cost, costReg
 
 
 def pred_probs(f_pred_prob, prepare_data, data, iterator, verbose=False):
@@ -456,8 +458,8 @@ def train_lstm(
     optimizer=adadelta,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
     encoder='lstm',  # TODO: can be removed must be lstm.
     saveto='lstm_model.npz',  # The best model will be saved there
-    validFreq=370,  # Compute the validation error after this number of update.
-    saveFreq=370,  # Save the parameters after every saveFreq updates
+    validFreq=3700,  # Compute the validation error after this number of update.
+    saveFreq=3700,  # Save the parameters after every saveFreq updates
     maxlen=100,  # Sequence longer then this get ignored
     batch_size=16,  # The batch size during training.
     valid_batch_size=64,  # The batch size used for validation/test set.
@@ -471,14 +473,17 @@ def train_lstm(
     test_size=-1,  # If >0, we keep only this number of test example.
 ):
 
-    # Model options
     model_options = locals().copy()
-    print("model options", model_options)
 
     load_data, prepare_data = get_dataset(dataset)
+    n_words2, train, valid, test, dic = load_data(valid_portion=0.05, maxlen=maxlen)
+    n_words = min(n_words, n_words2)
+    model_options["n_words"] = n_words
+
+    # Model options
+    print("model options", model_options)
 
     print('Loading data')
-    train, valid, test, dic = load_data(n_words=n_words, valid_portion=0.05, maxlen=maxlen)
     if test_size > 0:
         # The test set is sorted by size, but we want to keep random
         # size example.  So we must select a random selection of the
@@ -506,8 +511,7 @@ def train_lstm(
     tparams = init_tparams(params)
 
     # use_noise is for dropout
-    (use_noise, x, mask,
-     y, f_pred_prob, f_pred, cost) = build_model(tparams, model_options)
+    (use_noise, x, mask, y, f_pred_prob, f_pred, cost0, cost) = build_model(tparams, model_options)
 
     if decay_c > 0.:
         decay_c = theano.shared(numpy_floatX(decay_c), name='decay_c')
@@ -522,8 +526,7 @@ def train_lstm(
     f_grad = theano.function([x, mask, y], grads, name='f_grad')
 
     lr = tensor.scalar(name='lr')
-    f_grad_shared, f_update = optimizer(lr, tparams, grads,
-                                        x, mask, y, cost)
+    f_grad_shared, f_update, f_grad_shared0 = optimizer(lr, tparams, grads, x, mask, y, cost, cost0)
 
     print('Optimization')
 
@@ -567,6 +570,7 @@ def train_lstm(
                 x, mask, y = prepare_data(x, y)
                 n_samples += x.shape[1]
 
+                cost0 = f_grad_shared0(x, mask, y)
                 cost = f_grad_shared(x, mask, y)
                 f_update(lrate)
 
@@ -575,10 +579,10 @@ def train_lstm(
                     return 1., 1., 1.
 
                 if numpy.mod(uidx, dispFreq) == 0:
-                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost)
+                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0)
 
                 if saveto and numpy.mod(uidx, saveFreq) == 0:
-                    print('Saving...', end="")
+                    print('Saving... ', end="")
 
                     if best_p is not None:
                         params = best_p

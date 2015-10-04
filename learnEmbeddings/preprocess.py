@@ -39,20 +39,26 @@ def build_dict(path):
         worddict[keys[ss]] = idx + 2  # leave 0 and 1 (UNK)
 
     print(numpy.sum(counts), ' total words ', len(keys), ' unique words')
+    worddict["<EOS>"] = 0
+    worddict["<UNK>"] = 1
 
     return worddict
 
 def grab_data(path, dictionary):
     ss = [tokenize(s) for s in sentences(path)]
+    allwords = []
+    for s in ss:
+        allwords.extend(s)
     seqs = []
     labels = []
     for idx, words in enumerate(ss):
         coded = [dictionary[w] if w in dictionary else 1 for w in words]
+        coded.append(0)
         seqs.append(coded)
         labels.append(1)
         for i in range(random.randint(0, 5)):
             coded2 = coded[:]
-            coded2[random.randint(0, len(coded2) - 1)] = random.randint(0, len(dictionary) - 1)
+            coded2[random.randint(0, len(coded2) - 1)] = allwords[random.randint(0, len(allwords) - 1)]
             seqs.append(coded2)
             labels.append(0)
     return seqs, labels
