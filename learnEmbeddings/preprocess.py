@@ -14,7 +14,7 @@ def sentences(path):
     with open(path, 'r') as f:
         for line in f:
             count += 1
-            if count > 10000:
+            if count > 50000:
                 break
             yield line.strip()
 
@@ -53,6 +53,7 @@ def grab_data(path, dictionary):
         for i in range(random.randint(0, 5)):
             coded2 = coded[:]
             coded2[random.randint(0, len(coded2) - 1)] = random.randint(0, len(dictionary) - 1)
+            seqs.append(coded2)
             labels.append(0)
     return seqs, labels
 
