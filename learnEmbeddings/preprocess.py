@@ -14,7 +14,7 @@ def sentences(path):
     with open(path, 'r') as f:
         for line in f:
             count += 1
-            if count > 50000:
+            if count > 100000:
                 break
             yield line.strip()
 
