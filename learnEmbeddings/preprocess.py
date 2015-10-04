@@ -46,9 +46,6 @@ def build_dict(path):
 
 def grab_data(path, dictionary):
     ss = [tokenize(s) for s in sentences(path)]
-    allwords = []
-    for s in ss:
-        allwords.extend(s)
     seqs = []
     labels = []
     for idx, words in enumerate(ss):
@@ -56,6 +53,12 @@ def grab_data(path, dictionary):
         coded.append(0)
         seqs.append(coded)
         labels.append(1)
+    allwords = []
+    for s in seqs:
+        allwords.extend(s)
+    nSeqs = len(seqs)
+    for iSeq in range(nSeqs):
+        coded = seqs[iSeq]
         for i in range(random.randint(0, 5)):
             coded2 = coded[:]
             coded2[random.randint(0, len(coded2) - 1)] = allwords[random.randint(0, len(allwords) - 1)]
