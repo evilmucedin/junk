@@ -112,6 +112,7 @@ def load_data(path="queries.pkl", n_words=100000, valid_portion=0.1, maxlen=None
 
     train_set = pickle.load(f)
     test_set = pickle.load(f)
+    dic = pickle.load(f)
     f.close()
     if maxlen:
         new_train_set_x = []
@@ -167,4 +168,4 @@ def load_data(path="queries.pkl", n_words=100000, valid_portion=0.1, maxlen=None
     valid = (valid_set_x, valid_set_y)
     test = (test_set_x, test_set_y)
 
-    return train, valid, test
+    return train, valid, test, dic

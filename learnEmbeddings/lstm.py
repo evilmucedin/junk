@@ -59,7 +59,7 @@ def zipp(params, tparams):
     """
     When we reload the model. Needed for the GPU stuff.
     """
-    for kk, vv in params.iteritems():
+    for kk, vv in params.items():
         tparams[kk].set_value(vv)
 
 
@@ -68,7 +68,7 @@ def unzip(zipped):
     When we pickle the model. Needed for the GPU stuff.
     """
     new_params = OrderedDict()
-    for kk, vv in zipped.iteritems():
+    for kk, vv in zipped.items():
         new_params[kk] = vv.get_value()
     return new_params
 
@@ -457,7 +457,7 @@ def train_lstm(
     encoder='lstm',  # TODO: can be removed must be lstm.
     saveto='lstm_model.npz',  # The best model will be saved there
     validFreq=370,  # Compute the validation error after this number of update.
-    saveFreq=1110,  # Save the parameters after every saveFreq updates
+    saveFreq=370,  # Save the parameters after every saveFreq updates
     maxlen=100,  # Sequence longer then this get ignored
     batch_size=16,  # The batch size during training.
     valid_batch_size=64,  # The batch size used for validation/test set.
@@ -478,7 +478,7 @@ def train_lstm(
     load_data, prepare_data = get_dataset(dataset)
 
     print('Loading data')
-    train, valid, test = load_data(n_words=n_words, valid_portion=0.05, maxlen=maxlen)
+    train, valid, test, dic = load_data(n_words=n_words, valid_portion=0.05, maxlen=maxlen)
     if test_size > 0:
         # The test set is sorted by size, but we want to keep random
         # size example.  So we must select a random selection of the
@@ -559,7 +559,7 @@ def train_lstm(
 
                 # Select the random examples for this minibatch
                 y = [train[1][t] for t in train_index]
-                x = [train[0][t]for t in train_index]
+                x = [train[0][t] for t in train_index]
 
                 # Get the data in numpy.ndarray format
                 # This swap the axis!
@@ -586,6 +586,17 @@ def train_lstm(
                         params = unzip(tparams)
                     numpy.savez(saveto, history_errs=history_errs, **params)
                     pkl.dump(model_options, open('%s.pkl' % saveto, 'wb'), -1)
+                    
+                    with open("dump.txt", "w") as fOut:
+                        for i, emb in enumerate(params['Wemb']):
+                            word = ""
+                            if i in dic:
+                                word = dic[i]
+                            print(word + "\t", end="", file=fOut)
+                            for v in emb:
+                                print(" " + str(v), end="", file=fOut)
+                            print("", file=fOut)
+                    
                     print('Done')
 
                 if numpy.mod(uidx, validFreq) == 0:

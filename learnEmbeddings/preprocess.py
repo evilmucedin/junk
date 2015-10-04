@@ -14,7 +14,7 @@ def sentences(path):
     with open(path, 'r') as f:
         for line in f:
             count += 1
-            if count > 500000:
+            if count > 10000:
                 break
             yield line.strip()
 
@@ -78,6 +78,12 @@ def main():
     f = open('queries.pkl', 'wb')
     pkl.dump((train_x, train_y), f, -1)
     pkl.dump((test_x, test_y), f, -1)
+
+    revDict = {}
+    for k, v in dictionary.items():
+        revDict[v] = k
+    pkl.dump(revDict, f, -1)
+    
     f.close()
 
     f = open('queries.dict.pkl', 'wb')
