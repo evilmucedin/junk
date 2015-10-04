@@ -461,8 +461,8 @@ def train_lstm(
     validFreq=3700,  # Compute the validation error after this number of update.
     saveFreq=3700,  # Save the parameters after every saveFreq updates
     maxlen=100,  # Sequence longer then this get ignored
-    batch_size=16,  # The batch size during training.
-    valid_batch_size=64,  # The batch size used for validation/test set.
+    batch_size=1000,  # The batch size during training.
+    valid_batch_size=1000,  # The batch size used for validation/test set.
     dataset='imdb',
 
     # Parameter for extra option
@@ -580,6 +580,7 @@ def train_lstm(
 
                 if numpy.mod(uidx, dispFreq) == 0:
                     print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0)
+                    sys.stdout.flush()
 
                 if saveto and numpy.mod(uidx, saveFreq) == 0:
                     print('Saving... ', end="")
@@ -606,8 +607,7 @@ def train_lstm(
                 if numpy.mod(uidx, validFreq) == 0:
                     use_noise.set_value(0.)
                     train_err = pred_error(f_pred, prepare_data, train, kf)
-                    valid_err = pred_error(f_pred, prepare_data, valid,
-                                           kf_valid)
+                    valid_err = pred_error(f_pred, prepare_data, valid, kf_valid)
                     test_err = pred_error(f_pred, prepare_data, test, kf_test)
 
                     history_errs.append([valid_err, test_err])
@@ -665,5 +665,5 @@ if __name__ == '__main__':
     # See function train for all possible parameter and there definition.
     train_lstm(
         max_epochs=100,
-        test_size=500,
+        test_size=5000,
     )

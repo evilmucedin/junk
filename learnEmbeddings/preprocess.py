@@ -14,7 +14,7 @@ def sentences(path):
     with open(path, 'r') as f:
         for line in f:
             count += 1
-            if count > 100000:
+            if count > 1000000:
                 break
             yield line.strip()
 
@@ -78,7 +78,7 @@ def main():
     test_y = []
 
     for x, y in zip(all_x, all_y):
-        if random.randint(0, 10) < 8: 
+        if random.randint(0, 10) < 8:
             train_x.append(x)
             train_y.append(y)
         else:
