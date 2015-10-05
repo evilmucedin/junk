@@ -578,7 +578,9 @@ def train_lstm(
                     return 1., 1., 1.
 
                 if numpy.mod(uidx, dispFreq) == 0:
-                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0, 'Wemb ', (params['Wemb']**2).sum(), 'U ', (params['U']**2).sum(), 'b ', (params['b']**2).sum(), 'lr ', lr)
+                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0, 'Wemb ', (params['Wemb']**2).sum(), 'U ', (params['U']**2).sum(), 'b ', (params['b']**2).sum(), 'lr ', end="")
+                    theano.printing.Print("")(lr)
+                    print("")
                     sys.stdout.flush()
 
                 if saveto and numpy.mod(uidx, saveFreq) == 0:
