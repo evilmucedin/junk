@@ -450,7 +450,7 @@ def train_lstm(
     max_epochs=5000,  # The maximum number of epoch to run
     dispFreq=10,  # Display to stdout the training progress every N updates
     decay_c=0.,  # Weight decay for the classifier applied to the U weights.
-    lrate=0.0001,  # Learning rate for sgd (not used for adadelta and rmsprop)
+    lrate=0.1,  # Learning rate for sgd (not used for adadelta and rmsprop)
     n_words=10000,  # Vocabulary size
     optimizer=adadelta,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
     encoder='lstm',  # TODO: can be removed must be lstm.
@@ -578,7 +578,7 @@ def train_lstm(
                     return 1., 1., 1.
 
                 if numpy.mod(uidx, dispFreq) == 0:
-                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0, 'Wemb ', (params['Wemb']**2).sum(), 'U ', (params['U']**2).sum(), 'b ', (params['b']**2).sum())
+                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0, 'Wemb ', (params['Wemb']**2).sum(), 'U ', (params['U']**2).sum(), 'b ', (params['b']**2).sum(), 'lr ', lr)
                     sys.stdout.flush()
 
                 if saveto and numpy.mod(uidx, saveFreq) == 0:
