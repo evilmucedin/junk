@@ -400,7 +400,7 @@ def build_model(tparams, options):
         off = 1e-6
 
     cost = -tensor.log(pred[tensor.arange(n_samples), y] + off).mean()
-    costReg = cost + 0.00001*((tparams['Wemb']**2).sum() + (tparams['U']**2).sum() + (tparams['b']**2).sum())
+    costReg = cost + 0.0001*((tparams['Wemb']**2).sum() + (tparams['U']**2).sum() + (tparams['b']**2).sum())
 
     return use_noise, x, mask, y, f_pred_prob, f_pred, cost, costReg
 
@@ -413,14 +413,12 @@ def pred_probs(f_pred_prob, prepare_data, data, iterator, verbose=False):
     probs = numpy.zeros((n_samples, 2)).astype(config.floatX)
 
     n_done = 0
+    npData1 = numpy.array(data[1])
 
     for _, valid_index in iterator:
-        x, mask, y = prepare_data([data[0][t] for t in valid_index],
-                                  numpy.array(data[1])[valid_index],
-                                  maxlen=None)
+        x, mask, y = prepare_data([data[0][t] for t in valid_index], npData1[valid_index], maxlen=None)
         pred_probs = f_pred_prob(x, mask)
         probs[valid_index, :] = pred_probs
-
         n_done += len(valid_index)
         if verbose:
             print('%d/%d samples classified' % (n_done, n_samples))
@@ -434,13 +432,12 @@ def pred_error(f_pred, prepare_data, data, iterator, verbose=False):
     f_pred: Theano fct computing the prediction
     prepare_data: usual prepare_data for that dataset.
     """
+    npData1 = numpy.array(data[1])
     valid_err = 0
     for _, valid_index in iterator:
-        x, mask, y = prepare_data([data[0][t] for t in valid_index],
-                                  numpy.array(data[1])[valid_index],
-                                  maxlen=None)
+        x, mask, y = prepare_data([data[0][t] for t in valid_index], npData1[valid_index], maxlen=None)
         preds = f_pred(x, mask)
-        targets = numpy.array(data[1])[valid_index]
+        targets = npData1[valid_index]
         valid_err += (preds == targets).sum()
     valid_err = 1. - numpy_floatX(valid_err) / len(data[0])
 
@@ -472,13 +469,15 @@ def train_lstm(
     reload_model=None,  # Path to a saved model we want to start from.
     test_size=-1,  # If >0, we keep only this number of test example.
 ):
-
     model_options = locals().copy()
 
     load_data, prepare_data = get_dataset(dataset)
     n_words2, train, valid, test, dic = load_data(valid_portion=0.05, maxlen=maxlen)
     n_words = min(n_words, n_words2)
     model_options["n_words"] = n_words
+
+    for x in [train, valid, test]:
+        assert( len(x[0]) == len(x[1]) )
 
     # Model options
     print("model options", model_options)
@@ -530,8 +529,8 @@ def train_lstm(
 
     print('Optimization')
 
-    kf_valid = get_minibatches_idx(len(valid[0]), valid_batch_size)
-    kf_test = get_minibatches_idx(len(test[0]), valid_batch_size)
+    kf_valid = list(get_minibatches_idx(len(valid[0]), valid_batch_size))
+    kf_test = list(get_minibatches_idx(len(test[0]), valid_batch_size))
 
     print("%d train examples" % len(train[0]))
     print("%d valid examples" % len(valid[0]))
@@ -554,7 +553,7 @@ def train_lstm(
             n_samples = 0
 
             # Get new shuffled index for the training set.
-            kf = get_minibatches_idx(len(train[0]), batch_size, shuffle=True)
+            kf = list(get_minibatches_idx(len(train[0]), batch_size, shuffle=True))
 
             for _, train_index in kf:
                 uidx += 1
@@ -613,17 +612,14 @@ def train_lstm(
                     history_errs.append([valid_err, test_err])
 
                     if (uidx == 0 or
-                        valid_err <= numpy.array(history_errs)[:,
-                                                               0].min()):
-
+                        valid_err <= numpy.array(history_errs)[:, 0].min()):
                         best_p = unzip(tparams)
                         bad_counter = 0
 
                     print('Train ', train_err, 'Valid ', valid_err, 'Test ', test_err)
 
                     if (len(history_errs) > patience and
-                        valid_err >= numpy.array(history_errs)[:-patience,
-                                                               0].min()):
+                        valid_err >= numpy.array(history_errs)[:-patience, 0].min()):
                         bad_counter += 1
                         if bad_counter > patience:
                             print('Early Stop!')
