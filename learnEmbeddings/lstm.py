@@ -266,34 +266,21 @@ def adadelta(lr, tparams, grads, x, mask, y, cost, cost0):
        Rate Method*, arXiv:1212.5701.
     """
 
-    zipped_grads = [theano.shared(p.get_value() * numpy_floatX(0.),
-                                  name='%s_grad' % k)
-                    for k, p in tparams.items()]
-    running_up2 = [theano.shared(p.get_value() * numpy_floatX(0.),
-                                 name='%s_rup2' % k)
-                   for k, p in tparams.items()]
-    running_grads2 = [theano.shared(p.get_value() * numpy_floatX(0.),
-                                    name='%s_rgrad2' % k)
-                      for k, p in tparams.items()]
+    zipped_grads = [theano.shared(p.get_value() * numpy_floatX(0.), name='%s_grad' % k) for k, p in tparams.items()]
+    running_up2 = [theano.shared(p.get_value() * numpy_floatX(0.), name='%s_rup2' % k) for k, p in tparams.items()]
+    running_grads2 = [theano.shared(p.get_value() * numpy_floatX(0.), name='%s_rgrad2' % k) for k, p in tparams.items()]
 
     zgup = [(zg, g) for zg, g in zip(zipped_grads, grads)]
-    rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2))
-             for rg2, g in zip(running_grads2, grads)]
+    rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2)) for rg2, g in zip(running_grads2, grads)]
 
     f_grad_shared = theano.function([x, mask, y], cost, updates=zgup + rg2up, name='adadelta_f_grad_shared')
     f_grad_shared0 = theano.function([x, mask, y], cost0, name='adadelta_f_grad_shared0')
 
-    updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg
-             for zg, ru2, rg2 in zip(zipped_grads,
-                                     running_up2,
-                                     running_grads2)]
-    ru2up = [(ru2, 0.95 * ru2 + 0.05 * (ud ** 2))
-             for ru2, ud in zip(running_up2, updir)]
+    updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg for zg, ru2, rg2 in zip(zipped_grads, running_up2, running_grads2)]
+    ru2up = [(ru2, 0.95 * ru2 + 0.05 * (ud ** 2)) for ru2, ud in zip(running_up2, updir)]
     param_up = [(p, p + ud) for p, ud in zip(tparams.values(), updir)]
 
-    f_update = theano.function([lr], [], updates=ru2up + param_up,
-                               on_unused_input='ignore',
-                               name='adadelta_f_update')
+    f_update = theano.function([lr], [], updates=ru2up + param_up, on_unused_input='ignore', name='adadelta_f_update')
 
     return f_grad_shared, f_update, f_grad_shared0
 
