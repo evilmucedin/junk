@@ -578,7 +578,7 @@ def train_lstm(
                     return 1., 1., 1.
 
                 if numpy.mod(uidx, dispFreq) == 0:
-                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0)
+                    print('Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'Cost0 ', cost0, 'Wemb ', tparams['Wemb']**2).sum(), 'U ', tparams['U']**2).sum(), 'b ', tparams['b']**2).sum())
                     sys.stdout.flush()
 
                 if saveto and numpy.mod(uidx, saveFreq) == 0:
@@ -603,7 +603,7 @@ def train_lstm(
                     
                     print('Done')
 
-                if numpy.mod(uidx, validFreq) == 0:
+                if uidx == 1 or numpy.mod(uidx, validFreq) == 0:
                     use_noise.set_value(0.)
                     train_err = pred_error(f_pred, prepare_data, train, kf)
                     valid_err = pred_error(f_pred, prepare_data, valid, kf_valid)

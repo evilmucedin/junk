@@ -14,7 +14,7 @@ def sentences(path):
     with open(path, 'r') as f:
         for line in f:
             count += 1
-            if count > 1000000:
+            if count > 2200000:
                 break
             yield line.strip()
 
@@ -67,7 +67,7 @@ def grab_data(path, dictionary):
     return seqs, labels
 
 def main():
-    filenameInput = "EnUSQueries20150901.2000.filtered.log.uniq"
+    filenameInput = "3000/EnUSQueries20150901.2000.filtered.log.uniq"
     dictionary = build_dict(filenameInput)
 
     all_x, all_y = grab_data(filenameInput, dictionary)
