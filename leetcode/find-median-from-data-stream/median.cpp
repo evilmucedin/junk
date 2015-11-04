@@ -1,9 +1,9 @@
+#pragma GCC optimize (2)
+
 #include <cstdlib>
 
 #include <algorithm>
-#include <limits>
 #include <iostream>
-#include <queue>
 #include <vector>
 
 using namespace std;
@@ -12,34 +12,111 @@ class MedianFinder
 {
 private:
     typedef vector<int> TIntVector;
-    priority_queue<int, TIntVector, less<int>> _minHeap;
-    priority_queue<int, TIntVector, greater<int>> _maxHeap;
+    TIntVector _minHeap;
+    TIntVector _maxHeap;
+    size_t _size;
 
-    size_t getSize() const
+    struct Greater
     {
-        return _minHeap.size() + _maxHeap.size();
+        inline static bool F(int a, int b)
+        {
+            return a > b;
+        }
+    };
+
+    struct Less
+    {
+        inline static bool F(int a, int b)
+        {
+            return a < b;
+        }
+    };
+
+    template<typename T>
+    void HeapUp(TIntVector& vct, size_t index)
+    {
+        while (0 != index)
+        {
+            int parent = (index - 1) >> 1;
+            if (T::F(vct[index], vct[parent]))
+            {
+                swap(vct[index], vct[parent]);
+                index = parent;
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
+
+    template<typename T>
+    void HeapDown(TIntVector& vct, size_t index)
+    {
+        while (true)
+        {
+            int minIndex = index;
+            int childIndex = (index << 1) + 1;
+            if (childIndex < vct.size())
+            {
+                if (T::F(vct[childIndex], vct[minIndex]))
+                {
+                    minIndex = childIndex;
+                }
+                ++childIndex;
+                if (childIndex < vct.size())
+                {
+                    if (T::F(vct[childIndex], vct[minIndex]))
+                    {
+                        minIndex = childIndex;
+                    }
+                }
+                if (minIndex != index)
+                {
+                    swap(vct[index], vct[minIndex]);
+                    index = minIndex;
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
     }
 
 public:
+    MedianFinder()
+        : _size(0)
+    {
+        _minHeap.reserve(1 << 17);
+        _maxHeap.reserve(1 << 17);
+    }
+
     // Adds a number into the data structure.
     void addNum(int num)
     {
-        if (0 == (getSize() & 1))
+        if (0 == (_size & 1))
         {
-            _minHeap.emplace(num);
+            size_t size = _minHeap.size();
+            _minHeap.push_back(num);
+            HeapUp<Greater>(_minHeap, size);
         }
         else
         {
-            _maxHeap.emplace(num);
+            size_t size = _maxHeap.size();
+            _maxHeap.push_back(num);
+            HeapUp<Less>(_maxHeap, size);
         }
-        if (!_minHeap.empty() && !_maxHeap.empty() && _minHeap.top() > _maxHeap.top())
+        ++_size;
+        if ((_size > 2) && (_minHeap[0] > _maxHeap[0]))
         {
-            int maxTop = _maxHeap.top();
-            _maxHeap.pop();
-            int minTop = _minHeap.top();
-            _minHeap.pop();
-            _maxHeap.emplace(minTop);
-            _minHeap.emplace(maxTop);
+            swap(_minHeap[0], _maxHeap[0]);
+            HeapDown<Greater>(_minHeap, 0);
+            HeapDown<Less>(_maxHeap, 0);
         }
         // cerr << _minHeap.size() << "\t" << ((_minHeap.empty()) ? 0 : _minHeap.top()) << "\t" << _maxHeap.size() << "\t" << ((_maxHeap.empty()) ? 0 : _maxHeap.top()) << endl;
     }
@@ -47,31 +124,20 @@ public:
     // Returns the median of current data stream
     double findMedian() const
     {
-        if (getSize() & 1)
+        if (_size & 1)
         {
-            return _minHeap.top();
+            return _minHeap[0];
         }
         else
         {
-            return (static_cast<double>(_minHeap.top()) + static_cast<double>(_maxHeap.top()))/2.0;
+            return (static_cast<double>(_minHeap[0] + _maxHeap[0]))/2.0;
         }
     }
 
     double findMedianSlow() const
     {
-        TIntVector copy;
-        auto copyMin = _minHeap;
-        while (!copyMin.empty())
-        {
-            copy.push_back(copyMin.top());
-            copyMin.pop();
-        }
-        auto copyMax = _maxHeap;
-        while (!copyMax.empty())
-        {
-            copy.push_back(copyMax.top());
-            copyMax.pop();
-        }
+        TIntVector copy = _minHeap;
+        copy.insert(copy.end(), _maxHeap.begin(), _maxHeap.end());
         sort(copy.begin(), copy.end());
         if (copy.size() & 1)
         {
@@ -91,7 +157,7 @@ int main()
         static const size_t N = 1000;
         for (size_t i = 0; i < N; ++i)
         {
-            mf.addNum(rand());
+            mf.addNum(rand() % 1000000000);
         }
         cout << mf.findMedian() << endl;
         cout << mf.findMedianSlow() << endl;
