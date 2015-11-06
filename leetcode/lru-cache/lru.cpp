@@ -90,12 +90,8 @@ public:
             {
                 _data.erase(_tail->_key);
                 remove(_tail);
-                setHead(n);
             }
-            else
-            {
-                setHead(n);
-            }
+            setHead(n);
             _data.insert(TData::value_type(key, n));
         }
         else
