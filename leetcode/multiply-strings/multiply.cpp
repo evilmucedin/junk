@@ -74,9 +74,12 @@ public:
         return sResult;
     }
 
-    static void String2IntVectorGrouped(const string& s, TIntVector* result)
+    typedef vector<long long int> TLIntVector;
+
+    static void String2IntVectorGrouped(const string& s, TLIntVector* result)
     {
         result->clear();
+        result->reserve(s.length()/7 + 1);
         auto it = s.rbegin();
         while (it != s.rend())
         {
@@ -92,18 +95,43 @@ public:
         		num += 100*(*it - '0');
         		++it;
         	}
+        	if (it != s.rend())
+        	{
+        		num += 1000*(*it - '0');
+        		++it;
+        	}
+        	if (it != s.rend())
+        	{
+        		num += 10000*(*it - '0');
+        		++it;
+        	}
+        	if (it != s.rend())
+        	{
+        		num += 100000*(*it - '0');
+        		++it;
+        	}
+        	if (it != s.rend())
+        	{
+        		num += 1000000*(*it - '0');
+        		++it;
+        	}
+        	if (it != s.rend())
+        	{
+        		num += 10000000*(*it - '0');
+        		++it;
+        	}
         	result->push_back(num);
         }
     }
 
-    string multiply(string num1, string num2)
+    string multiply(const string& num1, const string& num2)
     {
-        TIntVector a;
-        TIntVector b;
+        TLIntVector a;
         String2IntVectorGrouped(num1, &a);
+        TLIntVector b;
         String2IntVectorGrouped(num2, &b);
 
-        TIntVector result1000(a.size() + b.size() + 1);
+        TLIntVector result1000(a.size() + b.size() + 1);
         for (size_t i = 0; i < a.size(); ++i)
         {
             for (size_t j = 0; j < b.size(); ++j)
@@ -114,16 +142,22 @@ public:
 
         for (size_t i = 0; i + 1 < result1000.size(); ++i)
         {
-            result1000[i + 1] += result1000[i]/1000;
-            result1000[i] %= 1000;
+        	static const long long int MUL = 100000000;
+            result1000[i + 1] += result1000[i]/MUL;
+            result1000[i] %= MUL;
         }
 
-        TIntVector result(result1000.size()*3);
+        static const size_t K = 8;
+        TIntVector result(result1000.size()*K);
         for (size_t i = 0; i < result1000.size(); ++i)
         {
-        	result[3*i] = result1000[i] % 10;
-        	result[3*i + 1] = (result1000[i] / 10) % 10;
-        	result[3*i + 2] = (result1000[i] / 100) % 10;
+        	long long int num = result1000[i];
+        	size_t index = K*i;
+        	for (size_t j = 0; j < K; ++j)
+        	{
+        		result[index++] = num % 10;
+        		num /= 10;
+        	}
         }
 
         int index = -1;
