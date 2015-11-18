@@ -124,48 +124,53 @@ public:
         }
     }
 
+    TLIntVector _a;
+    TLIntVector _b;
+    TLIntVector _result1000;
+    TIntVector _result;
+
     string multiply(const string& num1, const string& num2)
     {
-        TLIntVector a;
-        String2IntVectorGrouped(num1, &a);
-        TLIntVector b;
-        String2IntVectorGrouped(num2, &b);
+        String2IntVectorGrouped(num1, &_a);
+        String2IntVectorGrouped(num2, &_b);
 
-        TLIntVector result1000(a.size() + b.size() + 1);
-        for (size_t i = 0; i < a.size(); ++i)
+        _result1000.resize(_a.size() + _b.size() + 1);
+        fill(_result1000.begin(), _result1000.end(), 0);
+        for (size_t i = 0; i < _a.size(); ++i)
         {
-            for (size_t j = 0; j < b.size(); ++j)
+            for (size_t j = 0; j < _b.size(); ++j)
             {
-                result1000[i + j] += a[i]*b[j];
+                _result1000[i + j] += _a[i]*_b[j];
             }
         }
 
-        for (size_t i = 0; i + 1 < result1000.size(); ++i)
+        for (size_t i = 0; i + 1 < _result1000.size(); ++i)
         {
         	static const long long int MUL = 100000000;
-            result1000[i + 1] += result1000[i]/MUL;
-            result1000[i] %= MUL;
+            _result1000[i + 1] += _result1000[i]/MUL;
+            _result1000[i] %= MUL;
         }
 
         static const size_t K = 8;
-        TIntVector result(result1000.size()*K);
-        for (size_t i = 0; i < result1000.size(); ++i)
+        _result.resize(_result1000.size()*K);
+        for (size_t i = 0; i < _result1000.size(); ++i)
         {
-        	long long int num = result1000[i];
+        	int num = _result1000[i];
         	size_t index = K*i;
         	for (size_t j = 0; j < K; ++j)
         	{
-        		result[index++] = num % 10;
+        		_result[index++] = num % 10;
         		num /= 10;
         	}
         }
 
         int index = -1;
-        for (size_t i = 0; i < result.size(); ++i)
+        for (int i = _result.size() - 1; i >= 0; --i)
         {
-            if (result[i])
+            if (_result[i])
             {
                 index = i;
+                break;
             }
         }
 
@@ -178,7 +183,7 @@ public:
         sResult.resize(index + 1);
         for (int i = 0; i <= index; ++i)
         {
-            sResult[i] = result[index - i] + '0';
+            sResult[i] = _result[index - i] + '0';
         }
 
         return sResult;
