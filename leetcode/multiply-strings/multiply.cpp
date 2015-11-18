@@ -128,8 +128,9 @@ public:
     TLIntVector _b;
     TLIntVector _result1000;
     TIntVector _result;
+    string _sResult;
 
-    string multiply(const string& num1, const string& num2)
+    const string& multiply(const string& num1, const string& num2)
     {
         String2IntVectorGrouped(num1, &_a);
         String2IntVectorGrouped(num2, &_b);
@@ -174,19 +175,19 @@ public:
             }
         }
 
+        static const string ZERO = "0";
         if (-1 == index)
         {
-            return "0";
+            return ZERO;
         }
 
-        string sResult;
-        sResult.resize(index + 1);
+        _sResult.resize(index + 1);
         for (int i = 0; i <= index; ++i)
         {
-            sResult[i] = _result[index - i] + '0';
+            _sResult[i] = _result[index - i] + '0';
         }
 
-        return sResult;
+        return _sResult;
     }
 
     struct SIMDNumber
